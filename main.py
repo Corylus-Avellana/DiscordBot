@@ -47,6 +47,7 @@ class Announcer(commands.Cog):
         #an array for storing all announce tasks
         self.queue = []
         self.refreshtime = 500
+        self.lastrefresh = 0
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -67,6 +68,7 @@ class Announcer(commands.Cog):
 
     @tasks.loop (seconds = 500)
     async def refresh(self):
+        self.lastrefresh = math.floor(time.time())
         cur.execute("SELECT id FROM Announce WHERE time <= ?", (math.floor(time.time()) + self.refreshtime,))
         ids = cur.fetchall()
         for i in range(len(self.queue)):
@@ -109,7 +111,7 @@ Attention, {ping} \n <@{ctx.message.author.id}> would like to send
                     (sendat, channel, text, react.id, ctx.guild.id, react.channel.id, threshold,))
         conn.commit()
         #Creates new task to announce message if within refreshtime
-        if sendat <= time.time() + self.refreshtime:
+        if sendat <= self.lastrefresh + self.refreshtime:
             await self.announce_vote_task(cur.lastrowid)
 
     async def announce_vote_task(self, id):
